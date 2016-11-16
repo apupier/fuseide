@@ -19,7 +19,6 @@ import org.apache.maven.project.MavenProject;
 import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IProjectDescription;
-import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -254,38 +253,17 @@ public class CamelProjectConfigurator extends AbstractProjectConfigurator {
 			installCamelFacet(fproj, fpwc, camelVersion, monitor);
 			fpwc.commitChanges(monitor);
 			configureNature(project, mavenProject, monitor);
-			updateMavenProject(project, monitor);
+			updateMavenProject(project);
 		}
 	}
 
-	private void updateMavenProject(final IProject project, IProgressMonitor monitor) throws CoreException {
+	private void updateMavenProject(final IProject project) throws CoreException {
 		// MANIFEST.MF is probably not built yet
 		if (project != null) {
-			try {
-				waitJob(100, monitor);
-			} catch (InterruptedException ex) {
-				ex.printStackTrace();
-			}
 			// update the maven project so we start in a deployable state
 			// with a valid MANIFEST.MF built as part of the build process.
 			Job updateJob = new UpdateMavenProjectJob(new IProject[] { project });
 			updateJob.schedule();
-		}
-	}
-
-	private static void waitJob(int decreasingCounter, IProgressMonitor monitor) throws InterruptedException {
-		if (decreasingCounter > 0) {
-			return;
-		}
-		try {
-			Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_BUILD, monitor);
-			Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_REFRESH, monitor);
-			Job.getJobManager().join(ResourcesPlugin.FAMILY_AUTO_REFRESH, monitor);
-			Job.getJobManager().join(ResourcesPlugin.FAMILY_MANUAL_BUILD, monitor);
-		} catch (InterruptedException e) {
-			// Workaround to bug
-			// https://bugs.eclipse.org/bugs/show_bug.cgi?id=335251
-			waitJob(decreasingCounter--, monitor);
 		}
 	}
 
