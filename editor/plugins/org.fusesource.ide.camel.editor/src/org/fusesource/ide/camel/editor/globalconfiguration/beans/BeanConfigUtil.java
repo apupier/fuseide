@@ -254,6 +254,26 @@ public class BeanConfigUtil {
 					}
 				}).toArray(IMethod[]::new);
 	}
+	
+	private String openPublicNotStaticMethodDialog(IJavaProject jproject, String className, Shell shell) throws JavaModelException {
+		IType foundClass = jproject.findType(className);
+		if (foundClass != null) {
+			return openMethodDialog(shell, getPublicNotStaticMethods(foundClass), UIMessages.beanConfigUtilSelectPublicNotStaticMethod);
+		}
+		return null;
+	}
+	
+	private IMethod[] getPublicNotStaticMethods(IType foundClass) throws JavaModelException {
+		return Stream.of(foundClass.getMethods())
+				.filter(method -> {
+					try {
+						return !Flags.isStatic(method.getFlags()) && Flags.isPublic(method.getFlags());
+					} catch (JavaModelException e) {
+						CamelEditorUIActivator.pluginLog().logInfo("Issue when testing method for public & not static flags.", e); //$NON-NLS-1$
+						return false;
+					}
+				}).toArray(IMethod[]::new);
+	}
 
 	protected boolean isPublicNoArgNotConstructorMethod(IMethod method) throws JavaModelException {
 		return Flags.isPublic(method.getFlags()) && method.getNumberOfParameters() == 0 && !method.isConstructor();
@@ -407,6 +427,20 @@ public class BeanConfigUtil {
 			if (jproject.exists()) {
 				try {
 					return openStaticAndPublicMethodDialog(jproject, className, shell);
+				} catch (JavaModelException e) {
+					CamelEditorUIActivator.pluginLog().logError(e);
+				}
+			}
+		}
+		return null;
+	}
+	
+	public String handlePublicNonStaticMethodBrowse(IProject project, String className, Shell shell) {
+		if (project != null) {
+			IJavaProject jproject = JavaCore.create(project);
+			if (jproject.exists()) {
+				try {
+					return openPublicNotStaticMethodDialog(jproject, className, shell);
 				} catch (JavaModelException e) {
 					CamelEditorUIActivator.pluginLog().logError(e);
 				}
@@ -785,5 +819,7 @@ public class BeanConfigUtil {
 		}
 		return null;
 	}
+
+
 
 }
